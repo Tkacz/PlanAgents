@@ -35,7 +35,6 @@ public class TeacherAgent extends Agent {
             addBehaviour(new TeacherCheckMsgBehaviour(this));
         } else {
             System.out.println(getAID().getLocalName() + ": days[] == null\n");
-            takeDown();
         }
     }
     

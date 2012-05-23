@@ -4,6 +4,8 @@
  */
 package plan;
 
+import behaviours.RoomCheckQueryMsgBehaviour;
+import behaviours.RoomNegotiationBehavoiur;
 import jade.core.Agent;
 import jade.lang.acl.ACLMessage;
 
@@ -34,7 +36,9 @@ public class RoomAgent extends Agent {
         room = sql.getRoomData(id);
         
         if(room != null) {
-            System.out.println("Hello, I'm agent " + getAID().getLocalName() + " : " + room.toString());// + " : " + room.toString());
+            System.out.println("Hello, I'm agent " + getAID().getLocalName() + " : " + room.toString());
+            addBehaviour(new RoomCheckQueryMsgBehaviour(this));
+            addBehaviour(new RoomNegotiationBehavoiur(this));
         } else {
             System.out.println("room == null");
         }

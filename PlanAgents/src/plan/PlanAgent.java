@@ -69,7 +69,7 @@ public class PlanAgent extends Agent {
                 name = "Room" + Integer.toString(roomsId[i]);
                 roomsAgents.add(agCont.createNewAgent(name, "plan.RoomAgent", null));
                 roomsAgents.get(i).start();
-                Thread.sleep(i);
+                Thread.sleep(1000);
             }
         }
         catch (Exception e) {
@@ -85,7 +85,7 @@ public class PlanAgent extends Agent {
                 name = "Teacher" + Integer.toString(teachersId[i]);
                 teachersAgents.add(agCont.createNewAgent(name, "plan.TeacherAgent", null));
                 teachersAgents.get(i).start();
-                Thread.sleep(50);
+                Thread.sleep(1000);
             }
         } catch (Exception e) {
             System.out.println("startTeachersAgents exception: " + e.toString());
@@ -96,11 +96,18 @@ public class PlanAgent extends Agent {
         groupsAgents = new ArrayList<AgentController>();
         try {
             String name;
+            //////////////
+//            name = "Group" + Integer.toString(groupsId[0]);
+//            groupsAgents.add(agCont.createNewAgent(name, "plan.GroupAgent", null));
+//            groupsAgents.get(0).start();
+//            Thread.sleep(50);
+            ////////////////
+            
             for(int i = 0; i < groupsId.length; i++){
                 name = "Group" + Integer.toString(groupsId[i]);
                 groupsAgents.add(agCont.createNewAgent(name, "plan.GroupAgent", null));
                 groupsAgents.get(i).start();
-                Thread.sleep(50);
+                Thread.sleep(1000);
             }
         } catch (Exception e) {
             System.out.println("startGroupsAgents exceptions: " + e.toString());
@@ -108,6 +115,7 @@ public class PlanAgent extends Agent {
     }
     
     public void addToGroups(String name) {
+        System.out.println("Add to groups: " + name);
         if(groups.indexOf(name) == -1) {//jeszcze nie ma
             this.groups.add(name);
         }
@@ -117,6 +125,7 @@ public class PlanAgent extends Agent {
     }
     
     public void removeFromGroups(String name) {
+        System.out.println("Remove from groups: " + name);
         groups.remove(name);
     }
     

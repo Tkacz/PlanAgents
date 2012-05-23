@@ -43,7 +43,7 @@ public class RoomCheckQueryMsgBehaviour extends CyclicBehaviour {//czeka na zapy
             } else {//kolizja - negocjacja
                 ACLMessage ask = new ACLMessage(ACLMessage.QUERY_REF);//przygotowanie zapytania o ocenę do oponenta 
                 ask.addReceiver(new AID(plan[time][day], AID.ISLOCALNAME));//adresowanie wiadomości
-                ask.setContent("d" + day + "t" + time);//treść wiadomości
+                ask.setContent("d" + Integer.toString(day) + "t" + Integer.toString(time));//treść wiadomości
                 roomAgent.setIsCollision(true);//oznaczenie flagi kolizji
                 myAgent.send(ask);//wysłanie zapytania
             }
