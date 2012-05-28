@@ -4,10 +4,7 @@
  */
 package plan;
 
-import behaviours.GroupCheckRoomAnsBehaviour;
-import behaviours.GroupCheckTeacherAnsBehaviour;
-import behaviours.GroupFinderBehaviour;
-import behaviours.GroupWaitingForCancelBehaviour;
+import behaviours.GroupDataWaiterBehaviour;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.lang.acl.ACLMessage;
@@ -15,46 +12,26 @@ import java.util.ArrayList;
 
 /**
  *
- * @author rufus
+ * @author Rafał Tkaczyk
  */
 public class GroupAgent extends Agent {
     
-    private int id;
-    private Group group = null;
+    private Group group;
     private ArrayList<Room> rooms;
-    private RMySQL sql;
-    private boolean isTeacherAgreement;
-    private String foundPlace;
-    private String foundRoom;
     private boolean isFoundPlace;
         
     @Override
     protected void setup() {
+        group = null;
+        rooms = null;
+        isFoundPlace = true;
         
-        id = Integer.parseInt(getAID().getLocalName().substring(5));
+        addBehaviour(new GroupDataWaiterBehaviour(this));
         
-        isTeacherAgreement = false;
-        isFoundPlace = false;
-        sql = new RMySQL();        
-        group = sql.getGroupData(id);
-        rooms = sql.getAllRoomsData();
-        roomsFilter();
-        
-        if(group != null) {
-            System.out.println("Hello, I'm agent " + getAID().getLocalName() + " : " + group.toString());
-            if(rooms == null) {
-                System.out.println("agent: " + getAID().getLocalName() + ": rooms == null");
-                finish();
-            } else {
-                addBehaviour(new GroupFinderBehaviour(this));
-                addBehaviour(new GroupCheckTeacherAnsBehaviour(this));
-                addBehaviour(new GroupCheckRoomAnsBehaviour(this));
-                addBehaviour(new GroupWaitingForCancelBehaviour(this));
-            }
-        } else {
-            System.out.println("agent: " + getAID().getLocalName() + ": group == null");
-            finish();
-        }
+        ACLMessage msg = new ACLMessage(ACLMessage.QUERY_REF);
+        msg.addReceiver(new AID("Master", AID.ISLOCALNAME));
+        msg.setContent("GroupData");
+        send(msg);
     }
     
     @Override
@@ -73,18 +50,25 @@ public class GroupAgent extends Agent {
     public void finish() {
         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
         msg.addReceiver(new AID("Master", AID.ISLOCALNAME));
+        msg.setContent("end");
         send(msg);
     }
     
     public void startAgain() {
-        ACLMessage msg = new ACLMessage(ACLMessage.CANCEL);
+        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
         msg.addReceiver(new AID("Master", AID.ISLOCALNAME));
+        msg.setContent("start");
         send(msg);
     }
     
-    public int getRating(int time, int day, int roomId) {
+    public int getRating(int day, int time, int roomId) {
         int rating = 0;
-        Room room = sql.getRoomData(roomId);
+        Room room = null;
+        for(int i = 0, size = rooms.size(); i < size; i++) {
+            if(rooms.get(i).getId() == roomId) {
+                room = rooms.get(i);
+            }
+        }
         
         rating += group.getPriority();
         rating += group.getDayPriority(day);
@@ -93,7 +77,7 @@ public class GroupAgent extends Agent {
         } else {
             rating += 2;
         }
-        if(group.isKomps() == room.isKomps()) {
+        if(group.isComps() == room.isComps()) {
             rating += 1;
         } else {
             rating += 4;
@@ -111,7 +95,6 @@ public class GroupAgent extends Agent {
         ArrayList<Room> result = new ArrayList<Room>();
         for(int i = 0, size = rooms.size(); i < size; i++) {
             if(isRoomProper(rooms.get(i))) {
-               System.out.println("!!!");
                result.add(rooms.get(i)); 
             }
         }
@@ -119,10 +102,9 @@ public class GroupAgent extends Agent {
     }
     
     private boolean isRoomProper(Room room) {
-        if(group.getNumber() > 
-                room.getCapacity()) {
+        if(group.getNumber() > room.getCapacity()) {
             return false;
-        } else if(group.isKomps() == true && room.isKomps() == false) {
+        } else if(group.isComps() == true && room.isComps() == false) {
             return false;
         } else if(group.isBoard() == true && room.isBoard() == false) {
             return false;
@@ -132,29 +114,8 @@ public class GroupAgent extends Agent {
         return true;
     }
 
-    public void setIsTeacherAgreement(boolean isTeacherAgreement) {
-        this.isTeacherAgreement = isTeacherAgreement;
-    }
-    
-    public boolean getIsTeacherAgreement() {
-        return this.isTeacherAgreement;
-        
-    }
-
-    public String getFoundPlace() {
-        return foundPlace;
-    }
-
-    public String getFoundRoom() {
-        return foundRoom;
-    }
-
-    public void setFoundPlace(String foundPlace) {
-        this.foundPlace = foundPlace;
-    }
-
-    public void setFoundRoom(String foundRoom) {
-        this.foundRoom = foundRoom;
+    public void setGroup(Group group) {
+        this.group = new Group(group);
     }
 
     public void setIsFoundPlace(boolean isFoundPlace) {
@@ -163,5 +124,10 @@ public class GroupAgent extends Agent {
     
     public boolean getIsFoundPlace() {
         return this.isFoundPlace;
+    }
+
+    public void setRooms(ArrayList<Room> rooms) {        
+        this.rooms = new ArrayList<Room>(rooms);
+        roomsFilter();//odrzucanie niepasujących sal
     }
 }

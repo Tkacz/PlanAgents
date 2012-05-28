@@ -4,38 +4,57 @@
  */
 package plan;
 
-import behaviours.TeacherCheckMsgBehaviour;
+
+import behaviours.TeacherDataWaiterBehaviour;
+import jade.core.AID;
 import jade.core.Agent;
+import jade.lang.acl.ACLMessage;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Properties;
 
 /**
  *
- * @author rufus
+ * @author Rafał Tkaczyk
  */
 public class TeacherAgent extends Agent {
     
-    private int id;
+    private Teacher teacher;
     private String plan[][];//5x5 zawiera nazwe grupy
-    private int days[];
+    private Properties properties;
+    private int DAY;
+    private int TIME;
     
     @Override
     protected void setup() {
-        plan = new String[5][5];//5 dni po 5 jednostek czasowych (2 godziny każda), zawiera nazwę grupy
-        for(int i = 0; i < 5; i++) {
-            for(int j = 0; j < 5; j++) {
+        
+        try {
+            FileInputStream in = new FileInputStream("src/plan/plan.properties");
+            properties = new Properties();
+            properties.load(in);
+            in.close();
+            DAY = Integer.parseInt(properties.getProperty("days"));
+            TIME = Integer.parseInt(properties.getProperty("times"));
+        } catch (FileNotFoundException ex) {
+            System.out.println(ex.toString());
+        } catch (IOException ex) {
+            System.out.println(ex.toString());
+        }
+        
+        plan = new String[DAY][TIME];//5 dni po 5 jednostek czasowych (2 godziny każda), zawiera nazwę grupy
+        for(int i = 0; i < DAY; i++) {
+            for(int j = 0; j < TIME; j++) {
                 plan[i][j] = null;
             }
         }
         
-        id = Integer.parseInt(getAID().getLocalName().substring(7));
-        RMySQL sql = new RMySQL();
-        days = sql.getTeacherDays(id);
+        addBehaviour(new TeacherDataWaiterBehaviour(this));
         
-        if(days != null) {
-            System.out.println("Hello, I'm agent " + getAID().getLocalName() + " : " + days[0] + " : " + days[1] + "\n");
-            addBehaviour(new TeacherCheckMsgBehaviour(this));
-        } else {
-            System.out.println(getAID().getLocalName() + ": days[] == null\n");
-        }
+        ACLMessage msg = new ACLMessage(ACLMessage.QUERY_REF);
+        msg.addReceiver(new AID("Master", AID.ISLOCALNAME));
+        msg.setContent("Teacher");
+        send(msg);
     }
     
     @Override
@@ -44,7 +63,7 @@ public class TeacherAgent extends Agent {
     }
 
     public int getId() {
-        return id;
+        return teacher.getId();
     }
 
     public String[][] getPlan() {
@@ -52,6 +71,14 @@ public class TeacherAgent extends Agent {
     }
 
     public int[] getDays() {
-        return days;
+        return teacher.getDays();
+    }
+
+    public Teacher getTeacher() {
+        return teacher;
+    }
+
+    public void setTeacher(Teacher teacher) {
+        this.teacher = new Teacher(teacher);
     }
 }

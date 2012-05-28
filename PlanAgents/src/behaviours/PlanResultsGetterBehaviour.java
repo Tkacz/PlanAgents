@@ -8,33 +8,30 @@ import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import plan.PlanAgent;
+import plan.Result;
 
 /**
  *
  * @author Rafał Tkaczyk
  */
-public class PlanGuardianBehaviour extends CyclicBehaviour {
+public class PlanResultsGetterBehaviour extends CyclicBehaviour {
     
     private PlanAgent planAgent;
     
-    public PlanGuardianBehaviour(PlanAgent a) {
+    public PlanResultsGetterBehaviour(PlanAgent a) {
         super(a);
         this.planAgent = a;
     }
-    
+
     @Override
     public void action() {
-        
-        ACLMessage msg = myAgent.receive(MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+        ACLMessage msg = myAgent.receive(MessageTemplate.MatchPerformative(ACLMessage.INFORM_REF));
         if(msg != null) {
-            if(msg.getContent().equals("end")) {
-                planAgent.addToGroups(msg.getSender().getLocalName());
-            } else {
-                planAgent.removeFromGroups(msg.getSender().getLocalName());
-            }
+            String data[] = msg.getContent().split("-");
+            planAgent.addToResults(new Result(data[3], Integer.parseInt(data[0]), 
+                    Integer.parseInt(data[1]), Integer.parseInt(data[2])));
         } else {
             block();
         }
     }
-    
 }

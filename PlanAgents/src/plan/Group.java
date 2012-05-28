@@ -4,25 +4,27 @@
  */
 package plan;
 
+import jade.util.leap.Serializable;
+
 /**
  *
- * @author rufus
+ * @author Rafał Tkaczyk
  */
-public class Group {
+public class Group implements Serializable {
     private final String symbol;//symbol grupy
     private final int number;//ilość osób w grupie
     private final int priority;//priorytet 1-5 (1 najważniejszy)
-    private final boolean komps;//czy potrzebne komputery
+    private final boolean comps;//czy potrzebne komputery
     private final boolean projr;//czy potrzebny projektor
     private final boolean board;//czy potrzebna tablica interaktywna
     private final int teacher;//id wykladowcy
     private final int[] daysPriority;//priorytet dni, od 1-5 (1 najważniejszy)
     
-    public Group(String symbol, int number, int priority, boolean komps, boolean projr, boolean board, int teacher, int pn, int wt, int sr, int cz, int pt) {
+    public Group(String symbol, int number, int priority, boolean comps, boolean projr, boolean board, int teacher, int pn, int wt, int sr, int cz, int pt) {
         this.symbol = symbol;
         this.number = number;
         this.priority = priority;
-        this.komps = komps;
+        this.comps = comps;
         this.projr = projr;
         this.board = board;
         this.teacher = teacher;
@@ -38,7 +40,7 @@ public class Group {
         this.symbol = group.getSymbol();
         this.number = group.getNumber();
         this.priority = group.getPriority();
-        this.komps = group.isKomps();
+        this.comps = group.isComps();
         this.projr = group.isProjr();
         this.board = group.isBoard();
         this.teacher = group.getTeacher();
@@ -70,8 +72,8 @@ public class Group {
         return board;
     }
 
-    public boolean isKomps() {
-        return komps;
+    public boolean isComps() {
+        return comps;
     }
 
     public boolean isProjr() {

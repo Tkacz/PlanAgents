@@ -1,0 +1,7 @@
+DROP TABLE Przedmioty;
+DROP TABLE Wykladowcy;
+DROP TABLE PrzedWyk;
+DROP TABLE Grupy;
+DROP TABLE PrzedGru;
+DROP TABLE Studenci;
+DROP TABLE StuGru;

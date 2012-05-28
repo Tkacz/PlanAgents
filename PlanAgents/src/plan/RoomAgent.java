@@ -4,46 +4,59 @@
  */
 package plan;
 
-import behaviours.RoomCheckQueryMsgBehaviour;
-import behaviours.RoomNegotiationBehavoiur;
+
+import behaviours.RoomDataWaiterBehaviour;
+import jade.core.AID;
 import jade.core.Agent;
 import jade.lang.acl.ACLMessage;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Properties;
+
 
 /**
  *
- * @author rufus
+ * @author Rafał Tkaczyk
  */
 public class RoomAgent extends Agent {
     
-    private int id;
     private Room room;
     private String plan[][];//zawiera nazwy (id) agentów, którzy zajmują plan
-    private ACLMessage actualMsg;
-    private boolean isCollision;
+    private Properties properties;
+    private int DAY;
+    private int TIME;
     
     @Override
     protected void setup() {
-        plan = new String[5][5];//5 dni po 5 jednostek czasowych (2 godziny każda), zawiera nazwę grupy
-        for(int i = 0; i < 5; i++) {
-            for(int j = 0; j < 5; j++) {
+
+        try {
+            FileInputStream in = new FileInputStream("src/plan/plan.properties");
+            properties = new Properties();
+            properties.load(in);
+            in.close();
+            DAY = Integer.parseInt(properties.getProperty("days"));
+            TIME = Integer.parseInt(properties.getProperty("times"));
+        } catch (FileNotFoundException ex) {
+            System.out.println(ex.toString());
+        } catch (IOException ex) {
+            System.out.println(ex.toString());
+        }
+        
+        plan = new String[DAY][TIME];//5 dni po 5 jednostek czasowych (2 godziny każda), zawiera nazwę grupy
+        for(int i = 0; i < DAY; i++) {
+            for(int j = 0; j < TIME; j++) {
                 plan[i][j] = null;
             }
         }
-        isCollision = false;
         
-        id = Integer.parseInt(getAID().getLocalName().substring(4));
-        RMySQL sql = new RMySQL();
-        room = sql.getRoomData(id);
+        addBehaviour(new RoomDataWaiterBehaviour(this));
         
-        if(room != null) {
-            System.out.println("Hello, I'm agent " + getAID().getLocalName() + " : " + room.toString());
-            addBehaviour(new RoomCheckQueryMsgBehaviour(this));
-            addBehaviour(new RoomNegotiationBehavoiur(this));
-        } else {
-            System.out.println("room == null");
-        }
+        ACLMessage msg = new ACLMessage(ACLMessage.QUERY_REF);
+        msg.addReceiver(new AID("Master", AID.ISLOCALNAME));
+        msg.setContent("Room");
+        send(msg);
         
-        takeDown();
     }
     
     @Override
@@ -52,7 +65,7 @@ public class RoomAgent extends Agent {
     }
 
     public int getId() {
-        return id;
+        return room.getId();
     }
 
     public Room getRoom() {
@@ -62,24 +75,12 @@ public class RoomAgent extends Agent {
     public String[][] getPlan() {
         return plan;
     }
-
-    public void setActualMsg(ACLMessage actualMsg) {
-        this.actualMsg = actualMsg;
-    }
-
-    public ACLMessage getActualMsg() {
-        return actualMsg;
-    }
-
-    public void setIsCollision(boolean isCollision) {
-        this.isCollision = isCollision;
-    }
     
-    public boolean getIsCollision() {
-        return this.isCollision;
+    public void addGroupToPlan(String agentName, int day, int time) {
+        this.plan[day][time] = agentName;
     }
-    
-    public void addGroupToPlan(String agentName, int time, int day) {
-        this.plan[time][day] = agentName;
+
+    public void setRoom(Room room) {
+        this.room = new Room(room);
     }
 }

@@ -1,14 +1,13 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package plan;
 
+import behaviours.PlanDataManagerBehaviour;
 import behaviours.PlanGuardianBehaviour;
+import behaviours.PlanResultsGetterBehaviour;
 import jade.content.lang.Codec;
 import jade.content.lang.sl.SLCodec;
 import jade.content.onto.Ontology;
 import jade.content.onto.basic.Action;
+import jade.core.AID;
 import jade.core.Agent;
 import jade.domain.JADEAgentManagement.JADEManagementOntology;
 import jade.domain.JADEAgentManagement.ShutdownPlatform;
@@ -18,6 +17,7 @@ import jade.wrapper.AgentContainer;
 import jade.wrapper.AgentController;
 import jade.wrapper.StaleProxyException;
 import java.util.ArrayList;
+import javax.swing.JFrame;
 
 /**
  *
@@ -25,33 +25,41 @@ import java.util.ArrayList;
  */
 public class PlanAgent extends Agent {
     
-    private int roomsId[];//id sal
-    private int teachersId[];//ids of teachers
-    private int groupsId[];//id of groups
+    private ArrayList<Room> rooms;
+    private ArrayList<Teacher> teachers;
+    private ArrayList<Group> groups;
     private ArrayList<AgentController> roomsAgents;
     private ArrayList<AgentController> teachersAgents;
     private ArrayList<AgentController> groupsAgents;
-    private ArrayList<String> groups;
+    private ArrayList<String> groupsEnd;
     private RMySQL sql;
     private AgentContainer agCont;
     private PlanGuardianBehaviour guard;
+    private PlanDataManagerBehaviour dataManager;
+    private PlanResultsGetterBehaviour getter;
+    private ArrayList<Result> results;
     
     @Override
     protected void setup() {
         
+        results = new ArrayList<Result>();
+        
         agCont = (AgentContainer) getContainerController();
         
         sql = new RMySQL();
-        roomsId = sql.getRoomsId();
+                
+        rooms = sql.getAllRoomsData();
+        teachers = sql.getAllTeachersData();
+        groups = sql.getAllGroupsData();
+        
+        dataManager = new PlanDataManagerBehaviour(this);
+        addBehaviour(dataManager);
+        
         startRoomsAgents();
-        
-        teachersId = sql.getTeachersId();
         startTeachersAgents();
-        
-        groupsId = sql.getGroupsId();
         startGroupsAgents();
         
-        groups = new ArrayList<String>();
+        groupsEnd = new ArrayList<String>();
         guard = new PlanGuardianBehaviour(this);
         addBehaviour(guard);
     }
@@ -65,11 +73,10 @@ public class PlanAgent extends Agent {
         roomsAgents = new ArrayList<AgentController>();
         try {
             String name;
-            for(int i = 0; i < roomsId.length; i++){
-                name = "Room" + Integer.toString(roomsId[i]);
+            for(int i = 0; i < rooms.size(); i++){
+                name = "Room" + Integer.toString(rooms.get(i).getId());
                 roomsAgents.add(agCont.createNewAgent(name, "plan.RoomAgent", null));
                 roomsAgents.get(i).start();
-                Thread.sleep(1000);
             }
         }
         catch (Exception e) {
@@ -81,11 +88,10 @@ public class PlanAgent extends Agent {
         teachersAgents = new ArrayList<AgentController>();
         try {
             String name;
-            for(int i = 0; i < teachersId.length; i++){
-                name = "Teacher" + Integer.toString(teachersId[i]);
+            for(int i = 0; i < teachers.size(); i++){
+                name = "Teacher" + Integer.toString(teachers.get(i).getId());
                 teachersAgents.add(agCont.createNewAgent(name, "plan.TeacherAgent", null));
                 teachersAgents.get(i).start();
-                Thread.sleep(1000);
             }
         } catch (Exception e) {
             System.out.println("startTeachersAgents exception: " + e.toString());
@@ -96,18 +102,10 @@ public class PlanAgent extends Agent {
         groupsAgents = new ArrayList<AgentController>();
         try {
             String name;
-            //////////////
-//            name = "Group" + Integer.toString(groupsId[0]);
-//            groupsAgents.add(agCont.createNewAgent(name, "plan.GroupAgent", null));
-//            groupsAgents.get(0).start();
-//            Thread.sleep(50);
-            ////////////////
-            
-            for(int i = 0; i < groupsId.length; i++){
-                name = "Group" + Integer.toString(groupsId[i]);
+            for(int i = 0; i < groups.size(); i++){
+                name = "Group" + groups.get(i).getSymbol();
                 groupsAgents.add(agCont.createNewAgent(name, "plan.GroupAgent", null));
                 groupsAgents.get(i).start();
-                Thread.sleep(1000);
             }
         } catch (Exception e) {
             System.out.println("startGroupsAgents exceptions: " + e.toString());
@@ -115,18 +113,25 @@ public class PlanAgent extends Agent {
     }
     
     public void addToGroups(String name) {
-        System.out.println("Add to groups: " + name);
-        if(groups.indexOf(name) == -1) {//jeszcze nie ma
-            this.groups.add(name);
+        if(groupsEnd.indexOf(name) == -1) {
+            this.groupsEnd.add(name);
         }
-        if(groups.size() == groupsAgents.size()) {
-            slaughter();
+        if(groupsEnd.size() == groupsAgents.size()) {
+            
+            ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+            for(int i = 0, size = groupsEnd.size(); i < size; i++) {
+                msg.addReceiver(new AID(groupsEnd.get(i), AID.ISLOCALNAME));
+            }
+            send(msg);
+            removeBehaviour(guard);
+            removeBehaviour(dataManager);
+            getter = new PlanResultsGetterBehaviour(this);
+            addBehaviour(getter);
         }
     }
     
     public void removeFromGroups(String name) {
-        System.out.println("Remove from groups: " + name);
-        groups.remove(name);
+        groupsEnd.remove(name);
     }
     
     private void slaughter() {
@@ -142,8 +147,7 @@ public class PlanAgent extends Agent {
             for(int i = 0, size = groupsAgents.size(); i < size; i++) {
                 groupsAgents.get(i).kill();
             }
-            removeBehaviour(guard);
-            stopSystem();
+            //stopSystem();
         } catch (StaleProxyException ex) {
             System.out.println(ex.toString());
         }
@@ -164,5 +168,69 @@ public class PlanAgent extends Agent {
         } catch (Exception e) {
             System.out.println(e.toString());
         }
+    }
+    
+    public Room getRoomData(int id) {
+        for(int i = 0, size = rooms.size(); i < size; i++) {
+            if(rooms.get(i).getId() == id) {
+                return rooms.get(i);
+            }
+        }
+        return null;
+    }
+    
+    public Teacher getTeacherData(int id) {
+        for(int i = 0, size = teachers.size(); i < size; i++) {
+            if(teachers.get(i).getId() == id) {
+                return teachers.get(i);
+            }
+        }
+        return null;
+    }
+    
+    public Group getGroupData(String symbol) {
+        for(int i = 0, size = groups.size(); i < size; i++) {
+            if(groups.get(i).getSymbol().equals(symbol)) {
+                return groups.get(i);
+            }
+        }
+        return null;
+    }
+    
+    public ArrayList<Room> getRooms() {
+        return rooms;
+    }
+    
+    public void addToResults(Result result) {
+        this.results.add(result);
+        if(results.size() == groupsEnd.size()) {
+            removeBehaviour(getter);
+            
+            showResults();
+            
+            slaughter();
+        }
+    }
+    
+    private void showResults() {
+        
+        ArrayList<PlanData> data = sql.getPlanData();
+        for (int i = 0; i < results.size(); i++) {
+            System.out.println(results.get(i).toString());
+            for(int j = 0, size2 = data.size(); j < size2; j++) {
+                if(data.get(j).getSymbol().equals(results.get(i).getSymbol().substring(5))) {
+                    data.get(j).setTime(results.get(i).getTimeAsString());
+                    data.get(j).setRoom(results.get(i).getRoomId());
+                    data.get(j).setDay(results.get(i).getDay());
+                }
+            }
+        }
+        
+        /*for(int i = 0; i < data.size(); i ++) {
+            System.out.println(data.get(i).toString());
+        }*/
+        
+        JFrame planView = new PlanView(data);
+        planView.setVisible(true);
     }
 }

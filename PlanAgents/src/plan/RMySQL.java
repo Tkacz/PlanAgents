@@ -199,11 +199,11 @@ public class RMySQL {
             ResultSet rs = select(sel);
             rs.first();
 
-            boolean komps;
+            boolean comps;
             if (rs.getString(4).equals("T")) {
-                komps = true;//czy potrzebne komputery
+                comps = true;//czy potrzebne komputery
             } else {
-                komps = false;
+                comps = false;
             }
 
             boolean projr;//czy potrzebny projektor
@@ -220,7 +220,7 @@ public class RMySQL {
                 board = false;
             }
 
-            return new Group(rs.getString(1), rs.getInt(2), rs.getInt(3), komps, projr, board,
+            return new Group(rs.getString(1), rs.getInt(2), rs.getInt(3), comps, projr, board,
                     rs.getInt(7), rs.getInt(8), rs.getInt(9), rs.getInt(10), rs.getInt(11), rs.getInt(12));
 
         } catch (SQLException ex) {
@@ -233,12 +233,12 @@ public class RMySQL {
 
         try {
             ResultSet rs = select("SELECT * FROM Sale WHERE id=" + Integer.toString(id) + ";");
-            boolean komps;
+            boolean comps;
             rs.first();
             if (rs.getString(4).equals("T")) {
-                komps = true;
+                comps = true;
             } else {
-                komps = false;
+                comps = false;
             }
 
             boolean projr;
@@ -255,7 +255,7 @@ public class RMySQL {
                 board = false;
             }
 
-            return new Room(rs.getInt(1), rs.getInt(2), rs.getInt(3), komps, projr, board);
+            return new Room(rs.getInt(1), rs.getInt(2), rs.getInt(3), comps, projr, board);
 
         } catch (SQLException ex) {
             System.out.println(ex.toString());
@@ -268,12 +268,12 @@ public class RMySQL {
         ArrayList<Room> rooms = new ArrayList<Room>();
         try {
             ResultSet rs = select("SELECT * FROM Sale;");
-            boolean komps, projr, board;
+            boolean comps, projr, board;
             while(rs.next()) {
                 if (rs.getString(4).equals("T")) {
-                    komps = true;
+                    comps = true;
                 } else {
-                    komps = false;
+                    comps = false;
                 }
 
                 if (rs.getString(5).equals("T")) {
@@ -287,7 +287,7 @@ public class RMySQL {
                 } else {
                     board = false;
                 }
-                rooms.add(new Room(rs.getInt(1), rs.getInt(2), rs.getInt(3), komps, projr, board));
+                rooms.add(new Room(rs.getInt(1), rs.getInt(2), rs.getInt(3), comps, projr, board));
             }
             return rooms;
         } catch (SQLException ex) {
@@ -302,6 +302,92 @@ public class RMySQL {
             rs.first();
             int days[] = {rs.getInt(1), rs.getInt(2), rs.getInt(3), rs.getInt(4), rs.getInt(5)};
             return days;
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            return null;
+        }
+    }
+    
+    public ArrayList<Teacher> getAllTeachersData() {
+        try {
+            ArrayList<Teacher> res = new ArrayList<Teacher>();
+            ResultSet rs = select("SELECT id, pon, wt, sr, czw, pt FROM Wykladowcy;");
+            while(rs.next()) {
+                res.add(new Teacher(rs.getInt(1), rs.getInt(2), rs.getInt(3), rs.getInt(4), rs.getInt(5), rs.getInt(6)));
+            }
+            return res;
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            return null;
+        }
+    }
+    
+    public ArrayList<Group> getAllGroupsData() {
+        String sel = "SELECT g.symbol, g.ilosc, p.priorytet, p.komputery, p.rzutnik, p.tablicaInt, w.id, w.pon, w.wt, w.sr, w.czw, w.pt"
+                + " FROM Grupy g, Przedmioty p, PrzedGru pg, Wykladowcy w, WykGru wg"
+                + " WHERE pg.id_Przed=p.id"
+                + " AND pg.id_Gru=g.id"
+                + " AND wg.id_Wyk=w.id"
+                + " AND wg.id_Gru=g.id;";
+
+        try {
+            ResultSet rs = select(sel);
+            ArrayList<Group> res = new ArrayList<Group>();
+            while(rs.next()) {
+                
+                boolean comps;
+                if (rs.getString(4).equals("T")) {
+                    comps = true;//czy potrzebne komputery
+                } else {
+                    comps = false;
+                }
+
+                boolean projr;//czy potrzebny projektor
+                if (rs.getString(5).equals("T")) {
+                    projr = true;//czy potrzebne komputery
+                } else {
+                    projr = false;
+                }
+
+                boolean board;//czy potrzebna tablica interaktywna
+                if (rs.getString(6).equals("T")) {
+                    board = true;//czy potrzebne komputery
+                } else {
+                    board = false;
+                }
+                
+                res.add(new Group(rs.getString(1), rs.getInt(2), rs.getInt(3), comps, projr, board,
+                    rs.getInt(7), rs.getInt(8), rs.getInt(9), rs.getInt(10), rs.getInt(11), rs.getInt(12)));
+            }
+            
+            return res;
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            return null;
+        }
+    }
+    
+    public ArrayList<PlanData> getPlanData() {
+        String sel = "SELECT g.symbol, p.nazwa, p.rodzaj, w.tytuly, w.nazwisko"
+                + " FROM Przedmioty p, PrzedGru pg, Grupy g, Wykladowcy w, WykGru wg"
+                + " WHERE g.id=pg.id_Gru"
+                + " AND p.id=pg.id_Przed"
+                + " AND g.id=wg.id_Gru"
+                + " AND w.id=wg.id_Wyk;";
+
+        try {
+            ResultSet rs = select(sel);
+            ArrayList<PlanData> res = new ArrayList<PlanData>();
+            while(rs.next()) {
+                PlanData temp = new PlanData();
+                temp.setSymbol(rs.getString(1));
+                temp.setName(rs.getString(2));
+                temp.setType(rs.getString(3));
+                temp.setTeacher(rs.getString(4) + " " + rs.getString(5));
+                res.add(temp);
+            }
+            
+            return res;
         } catch (SQLException ex) {
             System.out.println(ex.toString());
             return null;

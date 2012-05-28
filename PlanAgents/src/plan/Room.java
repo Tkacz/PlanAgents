@@ -4,23 +4,25 @@
  */
 package plan;
 
+import jade.util.leap.Serializable;
+
 /**
  *
- * @author rufus
+ * @author Rafał Tkaczyk
  */
-public class Room extends Object {
+public class Room implements Serializable {
     private final int id;
     private final int nr;
     private final int capacity;
-    private final boolean komps;
+    private final boolean comps;
     private final boolean projr;
     private final boolean board;
     
-    public Room(int id, int nr, int capacity, boolean komps, boolean projr, boolean board) {
+    public Room(int id, int nr, int capacity, boolean comps, boolean projr, boolean board) {
         this.id = id;
         this.nr = nr;
         this.capacity = capacity;
-        this.komps = komps;
+        this.comps = comps;
         this.projr = projr;
         this.board = board;
     }
@@ -29,7 +31,7 @@ public class Room extends Object {
         this.id = room.getId();
         this.nr= room.getNr();
         this.capacity = room.getCapacity();
-        this.komps = room.isKomps();
+        this.comps = room.isComps();
         this.projr = room.isProjr();
         this.board = room.isBoard();
     }
@@ -50,8 +52,8 @@ public class Room extends Object {
         return board;
     }
 
-    public boolean isKomps() {
-        return komps;
+    public boolean isComps() {
+        return comps;
     }
 
     public boolean isProjr() {
