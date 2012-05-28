@@ -1,6 +1,0 @@
-SELECT g.symbol, g.ilosc, p.priorytet, p.komputery, p.rzutnik, p.tablicaInt, w.id, w.pon, w.wt, w.sr, w.czw, w.pt
-FROM Grupy g, Przedmioty p, PrzedGru pg, Wykladowcy w, WykGru wg
-WHERE pg.id_Przed=p.id
-AND pg.id_Gru=g.id
-AND wg.id_Wyk=w.id
-AND wg.id_Gru=g.id;
